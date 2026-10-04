@@ -65,6 +65,9 @@ node scan.mjs example.com --json
 
 # a cohort → ranked leaderboard + CSV
 node batch.mjs calgary-home-services.txt --out ./out --cat "Calgary home services"
+
+# a cohort → per-prospect reports + ready-to-send email drafts + outreach queue
+node outreach.mjs calgary-home-services.txt --out ./prospects --cat "home services" --city Calgary
 ```
 
 ## What it checks — 15 signals, 93 weighted points
