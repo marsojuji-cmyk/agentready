@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AgentReady — can AI agents actually read your website?</title>
+<meta name="description" content="Free scan: score any website on how well ChatGPT, Claude, Perplexity and Gemini can read, cite and operate it. 15 checks, no signup.">
+<style>
+  :root{--bg:#0b0d12;--card:#141821;--line:#232838;--fg:#e8ecf4;--mut:#8b95ab;--good:#3ddc84;--bad:#ff5c7a;--mid:#ffc857;--acc:#7c9cff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:64px 22px 80px}
+  .eyebrow{color:var(--acc);font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;margin-bottom:14px}
+  h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:0 0 18px;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--acc)}
+  .lede{font-size:18px;color:var(--mut);max-width:640px;margin:0 0 32px}
+  .cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:56px}
+  a.btn{display:inline-block;background:var(--acc);color:#0b0d12;font-weight:700;padding:14px 26px;border-radius:10px;text-decoration:none;font-size:15px}
+  a.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:56px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .stat b{display:block;font-size:32px;line-height:1.05;letter-spacing:-.02em}
+  .stat span{color:var(--mut);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+  h2{font-size:20px;margin:0 0 18px;letter-spacing:-.01em}
+  .checks{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 26px;margin-bottom:56px}
+  .checks li{color:var(--mut);font-size:15px;list-style:none;padding-left:22px;position:relative}
+  .checks li:before{content:"→";position:absolute;left:0;color:var(--acc)}
+  ul{padding:0;margin:0}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14px;margin-bottom:56px}
+  th,td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut)}
+  tr:last-child td{border-bottom:none}
+  td.sc{font-weight:700;width:70px}
+  .bad{color:var(--bad)}.mid{color:var(--mid)}.good{color:var(--good)}
+  .offer{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;margin-bottom:24px}
+  .offer h3{margin:0 0 4px;font-size:18px}
+  .offer .price{color:var(--acc);font-weight:700}
+  .offer p{color:var(--mut);margin:8px 0 0;font-size:15px}
+  .foot{color:var(--mut);font-size:13px;border-top:1px solid var(--line);padding-top:22px}
+  code{background:#1b2030;padding:2px 7px;border-radius:5px;font-size:14px;color:#c7d2fe}
+</style>
+</head>
+<body><div class="wrap">
+
+  <div class="eyebrow">Free scan · no signup · 15 checks</div>
+  <h1>Can AI agents actually <em>read</em> your website?</h1>
+  <p class="lede">
+    ChatGPT, Claude, Perplexity and Gemini increasingly visit your site through machine-readable
+    files before they ever parse the HTML. We scanned 20 Calgary home-services companies.
+    The average score was <strong>22.7 out of 100</strong>. Nobody graded above a D.
+  </p>
+  <div class="cta-row">
+    <a class="btn" href="mailto:hello@example.com?subject=Scan%20my%20site&body=My%20website%20is%3A%20">Get my free score</a>
+    <a class="btn ghost" href="#sample">See a sample report</a>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><b>22.7</b><span>mean score / 100</span></div>
+    <div class="stat"><b>0 of 20</b><span>graded C or better</span></div>
+    <div class="stat"><b>3 of 20</b><span>publish llms.txt</span></div>
+    <div class="stat"><b>8 of 20</b><span>have structured data</span></div>
+  </div>
+
+  <h2>What we check</h2>
+  <ul class="checks">
+    <li>llms.txt &amp; llms-full.txt</li>
+    <li>AI crawler rules in robots.txt</li>
+    <li>schema.org structured data</li>
+    <li>OpenAPI / Swagger spec</li>
+    <li>MCP / agent manifest</li>
+    <li>Markdown content negotiation</li>
+    <li>sitemap.xml</li>
+    <li>OpenGraph + meta description</li>
+    <li>security.txt, ai.txt, agent hints</li>
+  </ul>
+
+  <h2 id="sample">Sample — Calgary home services, 2026-10-04</h2>
+  <table>
+    <thead><tr><th>Site</th><th>Score</th><th>What it's missing</th></tr></thead>
+    <tbody>
+      <tr><td>mrmikesplumbing.ca</td><td class="sc mid">49</td><td>AI crawler rules in robots.txt</td></tr>
+      <tr><td>iconplumbing.ca</td><td class="sc mid">44</td><td>AI crawler rules in robots.txt</td></tr>
+      <tr><td>petetheplumber.com</td><td class="sc mid">37</td><td>no llms.txt</td></tr>
+      <tr><td>timberlineplumbing.ca</td><td class="sc bad">10</td><td>no llms.txt, no structured data</td></tr>
+      <tr><td>prostarplumbing.ca</td><td class="sc bad">4</td><td>no llms.txt, no structured data, no sitemap</td></tr>
+      <tr><td>jobjar.ca</td><td class="sc bad">4</td><td>no llms.txt, no structured data, no sitemap</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What it costs to fix</h2>
+  <div class="offer">
+    <h3>AI Visibility Report <span class="price">— $299</span></h3>
+    <p>Your score, what AI assistants currently can't see, and the exact files to publish. Three pages, delivered in 48 hours.</p>
+  </div>
+  <div class="offer">
+    <h3>Report + Implementation <span class="price">— $799</span></h3>
+    <p>We write the llms.txt, add schema.org markup, configure AI crawler rules, and re-scan to prove the score moved.</p>
+  </div>
+  <div class="offer">
+    <h3>Monthly monitoring <span class="price">— $49/mo</span></h3>
+    <p>We re-scan your site every week and tell you when your score drops or a competitor passes you.</p>
+  </div>
+
+  <div class="foot">
+    Scanned with <code>agentready</code> — 15 checks, 93 weighted points, zero dependencies.
+    Every number on this page is reproducible by re-running the scan.
+  </div>
+
+</div></body>
+</html>

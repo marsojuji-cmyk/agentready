@@ -1,0 +1,22 @@
+# Calgary home-services cohort — outreach target list
+# one domain per line; comments ignored
+mrmikesplumbing.ca
+timberlineplumbing.ca
+prostarplumbing.ca
+allcanadianplumbing.ca
+dukesplumbing.ca
+calgaryplumbing.net
+iconplumbing.ca
+quickerrooterplumbing.ca
+petetheplumber.com
+actionaugercalgary.com
+calgarysplumber.com
+koplumbing.org
+aqualityplumber.com
+bakerplumbing.ca
+jobjar.ca
+canyonplumbing.com
+calgaryproplumbing.com
+mycalgaryplumber.ca
+rpgcalgary.ca
+thegentlemenpros.com
