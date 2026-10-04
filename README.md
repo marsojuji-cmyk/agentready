@@ -54,6 +54,14 @@ Nobody is measuring this yet. In the Calgary home-services cohort measured on 20
 Two of the three that publish `llms.txt` do so by accident — Yoast SEO v28.5 and Rank Math
 now auto-generate it. The ones on older stacks have nothing.
 
+## Try it without installing anything
+
+Open an issue titled **"Scan my site"** with a URL in the body —
+[**click here**](https://github.com/marsojuji-cmyk/agentready/issues/new?title=Scan%20my%20site&body=My%20website%20is%3A%20https%3A%2F%2F)
+— and a GitHub Action scans the site and posts the full report as a comment.
+No backend, no signup, no API key. See a live one:
+[issue #1](https://github.com/marsojuji-cmyk/agentready/issues/1).
+
 ## Usage
 
 ```bash
