@@ -76,6 +76,9 @@ node batch.mjs calgary-home-services.txt --out ./out --cat "Calgary home service
 
 # a cohort → per-prospect reports + ready-to-send email drafts + outreach queue
 node outreach.mjs calgary-home-services.txt --out ./prospects --cat "home services" --city Calgary
+
+# the fix, not the diagnosis → tailored llms.txt + robots AI block + schema + instructions
+node fix.mjs dukesplumbing.ca --out ./fixes
 ```
 
 ## What it checks — 15 signals, 93 weighted points
