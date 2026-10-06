@@ -3,3 +3,6 @@ out/
 prospects/
 node_modules/
 .DS_Store
+
+# internal planning notes (kept out of the public tree)
+MONEY-PATH.md
