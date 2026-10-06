@@ -74,6 +74,9 @@ node scan.mjs example.com --out ./out
 # machine-readable
 node scan.mjs example.com --json
 
+# show only the 5 biggest fixes (default: every failing check); per-request timeout in ms
+node scan.mjs example.com --top 5 --timeout 8000
+
 # a cohort → ranked leaderboard + CSV
 node batch.mjs calgary-home-services.txt --out ./out --cat "Calgary home services"
 
@@ -82,7 +85,18 @@ node outreach.mjs calgary-home-services.txt --out ./prospects --cat "home servic
 
 # the fix, not the diagnosis → tailored llms.txt + robots AI block + schema + instructions
 node fix.mjs dukesplumbing.ca --out ./fixes
+node fix.mjs jane-doe.dev --out ./fixes --type person   # auto-detected by default: person | organization | localbusiness
+
+# regression tests (zero dependencies, local fake servers)
+node --test test/
 ```
+
+Exit codes: `0` scanned, `1` usage error, `2` site unreachable. An unreachable site is reported as
+`UNREACHABLE` with the DNS/TLS/connect error and is **not** given a score.
+
+Every file check is soft-404 aware: the scanner first requests a random path that cannot exist. If the
+site answers it with `200` (a catch-all, e.g. an SPA host with no 404 page), any file whose body matches
+that page, or any HTML body served for a `.txt`/`.json`/`.xml` path, is reported as `soft-404` and fails.
 
 ## What it checks: 15 signals, 93 weighted points
 
@@ -90,14 +104,14 @@ node fix.mjs dukesplumbing.ca --out ./fixes
 |---|---|
 | 12 | `llms.txt` present (real content, not a soft-404) |
 | 12 | JSON-LD structured data |
-| 10 | robots.txt addresses AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, …) |
+| 10 | robots.txt has an explicit `User-agent` group for at least one AI crawler (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, …). Allow **or** Disallow counts; evidence lists which are allowed and which are blocked; comment-only mentions do not count |
 | 8 | OpenAPI / Swagger spec discoverable |
 | 8 | Agent manifest (`/.well-known/mcp.json`, `ai-plugin.json`, …) |
 | 8 | Markdown content negotiation (`Accept: text/markdown`) |
 | 5 | `sitemap.xml` reachable |
-| 5 | High-value schema types (Organization, LocalBusiness, Product, FAQPage, …) |
+| 5 | High-value schema types (Organization, LocalBusiness, Product, FAQPage, Article, Person, ProfilePage, SoftwareSourceCode, …) |
 | 5 | OpenGraph + meta description |
-| 4 | HTTPS, `llms-full.txt` |
+| 4 | HTTPS (a real TLS connection), `llms-full.txt` |
 | 3 | `ai.txt`, `security.txt`, agent hint files, sitemap declared in robots.txt |
 
 The table mirrors the `add(...)` calls in `scan.mjs`, which sum to 93. The weights are opinionated and public: edit them in `scan.mjs` and argue with them.
@@ -107,7 +121,7 @@ The table mirrors the `add(...)` calls in `scan.mjs`, which sum to 93. The weigh
 - **Committed cohort scan:** [`examples/calgary-home-services-2026-10-04.html`](examples/calgary-home-services-2026-10-04.html). It covers 20 sites, with a mean score of 22.7/100. 0 of 20 sites grade C or better, 4 of 20 publish `llms.txt`, and 9 of 20 have JSON-LD.
 - **Live issue scan:** [issue #1](https://github.com/marsojuji-cmyk/agentready/issues/1).
 - **Quickstart output:** the `stripe.com` sample above, re-run on 2026-10-07. It scored 47/100, grade D, 44/93 points. Live sites change, so your numbers may differ.
-- The repo has **no automated test suite** yet. CodeQL code scanning and the scan-on-issue workflow run on GitHub Actions.
+- Regression tests: `node --test test/` (zero dependencies, local fake servers). CodeQL code scanning and the scan-on-issue workflow run on GitHub Actions.
 
 ## Why it matters
 
