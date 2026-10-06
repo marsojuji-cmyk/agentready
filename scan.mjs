@@ -92,6 +92,13 @@ function metaContent(html, attr, value) {
  * RFC 9309-style robots.txt parse: groups of user-agent lines followed by rules. Comments are stripped,
  * so a bot named only in a comment is NOT "addressed". Returns the policy each AI crawler gets.
  */
+/**
+ * Is this a robots.txt at all? RFC 9309 records are user-agent groups (user-agent + allow/disallow); the
+ * sitemap record (sitemaps.org, referenced by RFC 9309 §2.2.4) stands on its own outside any group.
+ * A file with only "Sitemap: …" is a valid robots.txt: it exists, it just sets no crawler rules.
+ */
+const isRobotsTxt = (text) => text.split(/\r?\n/).some((l) => /^\s*(user-agent|sitemap)\s*:\s*\S/i.test(l.replace(/#.*/, '')));
+
 function robotsPolicy(text, bots) {
   const groups = []; let cur = null; let lastWasAgent = false;
   for (const raw of text.split(/\r?\n/)) {
@@ -172,7 +179,7 @@ async function scan(rawUrl) {
   const mdProbe = await get(origin + '/', { accept: 'text/markdown, text/plain;q=0.9, */*;q=0.8' });
 
   const jsonld = home.ok ? hasJsonLdTypes(home.text) : new Set();
-  const robotsRes = fileCheck(`${origin}/robots.txt`, robots, 'text', (t) => /^\s*user-agent\s*:/im.test(t));
+  const robotsRes = fileCheck(`${origin}/robots.txt`, robots, 'text', isRobotsTxt);
   const robotsText = robotsRes.pass ? robots.text : '';
 
   const AI_BOTS = ['GPTBot', 'OAI-SearchBot', 'ChatGPT-User', 'ClaudeBot', 'Claude-User', 'Claude-SearchBot', 'anthropic-ai',
@@ -210,7 +217,8 @@ async function scan(rawUrl) {
   add('robots_ai', 'robots.txt addresses AI crawlers', 10, named.length > 0,
     !robotsRes.pass ? `robots.txt missing — ${robotsRes.evidence}`
       : named.length ? `explicit groups for ${named.length} AI crawlers — allowed: ${allowed.join(', ') || 'none'}; blocked: ${blocked.join(', ') || 'none'}; User-agent * → ${policy.wildcard || 'no * group'}`
-        : `robots.txt → 200 but no User-agent group for any AI crawler (User-agent * → ${policy.wildcard || 'no * group'})`);
+        : policy.groups === 0 ? 'robots.txt → 200 but it has no User-agent groups at all (Sitemap record only), so no AI crawler rules'
+          : `robots.txt → 200 but no User-agent group for any AI crawler (User-agent * → ${policy.wildcard || 'no * group'})`);
 
   // 6. sitemap declared
   const sitemapLine = robotsText.match(/^\s*sitemap\s*:\s*(\S+)/im);

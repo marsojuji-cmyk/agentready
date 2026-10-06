@@ -130,7 +130,9 @@ for (const c of candidates) {
 
 // what already exists (soft-404 aware)
 const robotsRes = await get(origin + '/robots.txt');
-const robotsExists = !isSoft404(robotsRes) && !looksHtml(robotsRes.text) && /user-agent\s*:/i.test(robotsRes.text);
+const robotsExists = !isSoft404(robotsRes) && !looksHtml(robotsRes.text) &&
+  // RFC 9309: a file with only a Sitemap: record is still a robots.txt (append to it, don't "create" it)
+  robotsRes.text.split(/\r?\n/).some((l) => /^\s*(user-agent|sitemap)\s*:\s*\S/i.test(l.replace(/#.*/, '')));
 const smRes = await get(origin + '/sitemap.xml');
 const sitemapExists = !isSoft404(smRes) && /<(urlset|sitemapindex)[\s>]/i.test(smRes.text);
 

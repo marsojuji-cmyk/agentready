@@ -99,6 +99,52 @@ test('robots.txt that names AI bots only in comments does not get credit', async
   } finally { await s.close(); }
 });
 
+test('robots.txt with only a Sitemap: record exists (RFC 9309): sitemap credit, no AI-crawler credit', async () => {
+  const s = await serve((req, res) => {
+    const p = new URL(req.url, 'http://x').pathname;
+    if (p === '/robots.txt') return send(res, 200, 'text/plain; charset=utf-8', '# no crawler rules here\nSitemap: https://example.com/sitemap.xml\n');
+    return send(res, 404, 'text/plain', 'nope');
+  });
+  try {
+    const r = await scanJson(s.url);
+    assert.equal(r.code, 0);
+    assert.equal(check(r, 'robots_sitemap').pass, true, check(r, 'robots_sitemap').evidence);
+    assert.match(check(r, 'robots_sitemap').evidence, /^Sitemap: https:\/\/example\.com\/sitemap\.xml$/);
+    assert.equal(check(r, 'robots_ai').pass, false);
+    assert.doesNotMatch(check(r, 'robots_ai').evidence, /missing/, 'a Sitemap-only robots.txt is not "missing"');
+    assert.match(check(r, 'robots_ai').evidence, /no User-agent groups at all/);
+    assert.deepEqual(r.json.robots, { aiCrawlers: {}, wildcard: null }, 'robots.txt is reported as present, with no rules');
+  } finally { await s.close(); }
+  // a comment-only or empty 200 text file is still not a robots.txt
+  const e = await serve((req, res) => req.url === '/robots.txt'
+    ? send(res, 200, 'text/plain', '# Sitemap: https://example.com/sitemap.xml\n')
+    : send(res, 404, 'text/plain', 'nope'));
+  try {
+    const r = await scanJson(e.url);
+    assert.equal(check(r, 'robots_sitemap').pass, false);
+    assert.match(check(r, 'robots_ai').evidence, /robots\.txt missing .*not a valid/);
+    assert.equal(r.json.robots, null);
+  } finally { await e.close(); }
+});
+
+test('fix.mjs: a Sitemap-only robots.txt is appended to, not re-created', async () => {
+  const home = '<!DOCTYPE html><html><head><title>Acme Plumbing</title><meta name="description" content="Acme Plumbing fixes pipes all over town, day and night."></head><body><h1>Acme</h1></body></html>';
+  const s = await serve((req, res) => {
+    const p = new URL(req.url, 'http://x').pathname;
+    if (p === '/') return send(res, 200, 'text/html', home);
+    if (p === '/robots.txt') return send(res, 200, 'text/plain', 'Sitemap: https://acme.test/sitemap.xml\n');
+    return send(res, 404, 'text/plain', 'nope');
+  });
+  try {
+    const out = tmp();
+    const r = await run('fix.mjs', [s.url, '--out', out]);
+    assert.equal(r.code, 0, r.stderr);
+    const fixMd = readFileSync(join(out, new URL(s.url).host, 'FIX.md'), 'utf8');
+    assert.match(fixMd, /append to the existing file/);
+    assert.doesNotMatch(fixMd, /none exists today/);
+  } finally { await s.close(); }
+});
+
 test('unreachable site is reported as unreachable, not scored (exit 2)', async () => {
   const s = await serve(() => {}); const url = s.url; await s.close(); // port is now closed
   const r = await scanJson(url);

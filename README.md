@@ -112,7 +112,7 @@ that page, or any HTML body served for a `.txt`/`.json`/`.xml` path, is reported
 | 5 | High-value schema types (Organization, LocalBusiness, Product, FAQPage, Article, Person, ProfilePage, SoftwareSourceCode, …) |
 | 5 | OpenGraph + meta description |
 | 4 | HTTPS (a real TLS connection), `llms-full.txt` |
-| 3 | `ai.txt`, `security.txt`, agent hint files, sitemap declared in robots.txt |
+| 3 | `ai.txt`, `security.txt`, agent hint files, sitemap declared in robots.txt (a robots.txt with only a `Sitemap:` record is a valid file under RFC 9309: it earns this point, but not the AI-crawler points) |
 
 The table mirrors the `add(...)` calls in `scan.mjs`, which sum to 93. The weights are opinionated and public: edit them in `scan.mjs` and argue with them.
 
