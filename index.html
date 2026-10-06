@@ -36,6 +36,8 @@
   .offer h3{margin:0 0 4px;font-size:18px}
   .offer .price{color:var(--acc);font-weight:700}
   .offer p{color:var(--mut);margin:8px 0 0;font-size:15px}
+  .note{color:var(--mut);font-size:14px;margin:-40px 0 56px}
+  .note a{color:var(--acc)}
   .foot{color:var(--mut);font-size:13px;border-top:1px solid var(--line);padding-top:22px}
   code{background:#1b2030;padding:2px 7px;border-radius:5px;font-size:14px;color:#c7d2fe}
 </style>
@@ -46,8 +48,8 @@
   <h1>Can AI agents actually <em>read</em> your website?</h1>
   <p class="lede">
     ChatGPT, Claude, Perplexity and Gemini increasingly visit your site through machine-readable
-    files before they ever parse the HTML. We scanned 20 Calgary home-services companies.
-    The average score was <strong>22.7 out of 100</strong>. Nobody graded above a D.
+    files before they ever parse the HTML. On October 6, 2026 we scanned 20 Calgary-area plumbing
+    &amp; HVAC company websites. None graded C or better; the best scored <strong>49 out of 100</strong>.
   </p>
   <div class="cta-row">
     <a class="btn" href="https://github.com/marsojuji-cmyk/agentready/issues/new?title=Scan%20my%20site&body=My%20website%20is%3A%20https%3A%2F%2F">Get my free score</a>
@@ -55,11 +57,15 @@
   </div>
 
   <div class="stats">
-    <div class="stat"><b>22.7</b><span>mean score / 100</span></div>
     <div class="stat"><b>0 of 20</b><span>graded C or better</span></div>
-    <div class="stat"><b>3 of 20</b><span>publish llms.txt</span></div>
-    <div class="stat"><b>8 of 20</b><span>have structured data</span></div>
+    <div class="stat"><b>49</b><span>best score / 100</span></div>
+    <div class="stat"><b>25.9</b><span>mean score / 100 (19 scored)</span></div>
+    <div class="stat"><b>5 of 20</b><span>publish llms.txt</span></div>
+    <div class="stat"><b>10 of 20</b><span>have structured data</span></div>
   </div>
+  <p class="note">Scanned 2026-10-06 with <code>agentready</code>, one pass. 6 of the 20 sites could not be read by the
+    scanner (3 bot walls, 2 domains with no site connected, 1 redirect loop); they are still counted, and the 5 that
+    answered are scored on what an agent actually received. <a href="examples/agent-readiness-2026-10-06.html">Full leaderboard</a>.</p>
 
   <h2>What we check</h2>
   <ul class="checks">
@@ -74,16 +80,15 @@
     <li>security.txt, ai.txt, agent hints</li>
   </ul>
 
-  <h2 id="sample">Sample — Calgary home services, 2026-10-04</h2>
+  <h2 id="sample">Sample — Calgary-area plumbing &amp; HVAC, 2026-10-06</h2>
   <table>
     <thead><tr><th>Site</th><th>Score</th><th>What it's missing</th></tr></thead>
     <tbody>
-      <tr><td>mrmikesplumbing.ca</td><td class="sc mid">49</td><td>AI crawler rules in robots.txt</td></tr>
-      <tr><td>iconplumbing.ca</td><td class="sc mid">44</td><td>AI crawler rules in robots.txt</td></tr>
-      <tr><td>petetheplumber.com</td><td class="sc mid">37</td><td>no llms.txt</td></tr>
-      <tr><td>timberlineplumbing.ca</td><td class="sc bad">10</td><td>no llms.txt, no structured data</td></tr>
-      <tr><td>prostarplumbing.ca</td><td class="sc bad">4</td><td>no llms.txt, no structured data, no sitemap</td></tr>
-      <tr><td>jobjar.ca</td><td class="sc bad">4</td><td>no llms.txt, no structured data, no sitemap</td></tr>
+      <tr><td>Site A</td><td class="sc mid">49</td><td>AI crawler rules in robots.txt, agent manifest, markdown</td></tr>
+      <tr><td>Site D</td><td class="sc mid">49</td><td>AI crawler rules in robots.txt, agent manifest, markdown</td></tr>
+      <tr><td>Site F</td><td class="sc mid">37</td><td>no llms.txt, no AI crawler rules</td></tr>
+      <tr><td>Site N</td><td class="sc bad">10</td><td>no llms.txt, no structured data, no meta description</td></tr>
+      <tr><td>Site R</td><td class="sc bad">4</td><td>not readable: no site connected to the domain</td></tr>
     </tbody>
   </table>
 
@@ -103,7 +108,7 @@
 
   <div class="foot">
     Scanned with <code>agentready</code> — 15 checks, 93 weighted points, zero dependencies.
-    Every number on this page is reproducible by re-running the scan.
+    Every number on this page is reproducible by re-running the scan (figures from 2026-10-06; live sites change, so expect drift).
   </div>
 
 </div></body>
