@@ -1,5 +1,6 @@
 # agentready
 
+**Sites without machine-readable surfaces serve agents HTML soup — uncited, inoperable.**
 **Score any website on how well AI agents can read, cite and operate it.**
 
 Zero dependencies. Node 18+. One file. No API keys, no accounts, no cloud.
