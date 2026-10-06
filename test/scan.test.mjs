@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { execFile } from 'node:child_process';
-import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -206,4 +206,34 @@ test('fix.mjs: Person schema, clean URLs, decoded Cloudflare email, no email-pro
     const forced = await run('fix.mjs', [s.url, '--out', tmp(), '--type', 'localbusiness']);
     assert.match(forced.stdout, /LocalBusiness skeleton \(forced with --type localbusiness\)/);
   } finally { await s.close(); }
+});
+
+test('batch.mjs: every listed site is counted; unreachable and not-readable sites are flagged; --anon hides hosts', async () => {
+  const ok = await serve((req, res) => new URL(req.url, 'http://x').pathname === '/'
+    ? send(res, 200, 'text/html', '<!doctype html><html><head><title>Fine</title></head><body>hi</body></html>')
+    : send(res, 404, 'text/plain', 'nope'));
+  const walled = await serve((req, res) => send(res, 403, 'text/html', '<!doctype html><html><head><title>403 - Forbidden</title></head><body>no bots</body></html>'));
+  const gone = await serve(() => {}); const goneUrl = gone.url; await gone.close(); // nothing listens here any more
+  const dir = tmp(); const list = join(dir, 'list.txt');
+  writeFileSync(list, `# test cohort\n${ok.url}\n${walled.url}\n${goneUrl}\n`);
+  try {
+    const out = join(dir, 'named');
+    const r = await run('batch.mjs', [list, '--out', out, '--cat', 'Test cohort']);
+    assert.equal(r.code, 0, r.stderr);
+    const html = readFileSync(join(out, 'leaderboard.html'), 'utf8');
+    assert.match(html, /3 sites listed · scanned \d{4}-\d{2}-\d{2} · 2 scored, 1 unreachable · 2 of 3 could not be read/);
+    assert.match(html, /<b>0 of 3<\/b><span>grade C \(62\+\) or better/);
+    assert.match(html, /not readable: homepage returned HTTP 403/);
+    assert.match(html, /UNREACHABLE: no HTTP response \(not scored\)/);
+    assert.ok(html.includes(new URL(walled.url).host));
+    const csv = readFileSync(join(out, 'leaderboard.csv'), 'utf8').trim().split('\n');
+    assert.equal(csv.length, 4, 'header + all 3 listed sites');
+
+    const anonOut = join(dir, 'anon');
+    const a = await run('batch.mjs', [list, '--out', anonOut, '--cat', 'Test cohort', '--anon']);
+    assert.equal(a.code, 0, a.stderr);
+    const anonHtml = readFileSync(join(anonOut, 'leaderboard.html'), 'utf8') + readFileSync(join(anonOut, 'leaderboard.csv'), 'utf8');
+    for (const u of [ok.url, walled.url, goneUrl]) assert.ok(!anonHtml.includes(new URL(u).host), `anon output must not contain ${new URL(u).host}`);
+    assert.match(anonHtml, /Site A[\s\S]*Site B[\s\S]*Site C/);
+  } finally { await ok.close(); await walled.close(); }
 });
