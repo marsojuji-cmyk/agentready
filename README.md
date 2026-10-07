@@ -1,13 +1,29 @@
 # agentready
 
-**Sites without machine-readable surfaces serve agents HTML soup — uncited, inoperable.**
-**Score any website on how well AI agents can read, cite and operate it.**
+**Scores how well AI agents can read, cite and operate any website.**
 
-Zero dependencies. Node 18+. One file. No API keys, no accounts, no cloud.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Node 18+](https://img.shields.io/badge/node-18%2B-339933.svg)](scan.mjs)
+[![scan-on-issue](https://github.com/marsojuji-cmyk/agentready/actions/workflows/scan-on-issue.yml/badge.svg)](https://github.com/marsojuji-cmyk/agentready/actions/workflows/scan-on-issue.yml)
+
+Sites without machine-readable surfaces serve agents HTML soup, so they go uncited and agents can't operate them. agentready measures that gap with 15 checks. It ships as one file with zero dependencies and needs no API keys, accounts or cloud.
+
+## What it guarantees
+
+- **Evidence for every verdict.** Each check records the URL it requested and the status it got back, and the report prints both.
+- **Soft-404s fail.** `llms.txt` passes only when the response is OK, the body is over 40 bytes, and its first 400 characters contain no HTML markers.
+- **Reproducible score.** The score is `earned / 93` weighted points, rounded. Grades run A ≥ 90, B ≥ 78, C ≥ 62, D ≥ 45, E ≥ 25, F otherwise.
+- **No supply chain.** No `node_modules` and no lockfile. It uses Node's global `fetch` only.
+- **Read-only.** The scanner only issues GET requests and writes nothing to the target.
+
+## Quickstart
 
 ```bash
+git clone https://github.com/marsojuji-cmyk/agentready && cd agentready
 node scan.mjs stripe.com
 ```
+
+Sample output (recorded when this README was first written):
 
 ```
   AI AGENT READINESS — stripe.com
@@ -28,32 +44,18 @@ node scan.mjs stripe.com
    3. Agent/MCP manifest present      (+8 pts available)
 ```
 
-Writes a standalone HTML report and a JSON record per scan.
+The scan writes a standalone HTML report and a JSON record to `./agentready-out/`. Pass `--out <dir>` to change the location or `--json` for machine-readable output.
 
-## Why this exists
+## How it fails
 
-Agents — ChatGPT, Claude, Perplexity, Gemini, Copilot — increasingly read sites through
-machine-readable surfaces *before* they read the HTML. `llms.txt`, AI crawler rules in
-`robots.txt`, `schema.org` JSON-LD, an OpenAPI spec, an MCP manifest, markdown content
-negotiation. When a site lacks them, the agent gets an HTML soup of nav links and marketing
-copy, or nothing at all.
-
-Two things happen then: the site **doesn't get cited** when someone asks an assistant a
-question it should have answered, and it **can't be operated** by an agent that wanted to
-book, quote, or buy.
-
-Nobody is measuring this yet. In the Calgary home-services cohort measured on 2026-10-04
-(20 sites, real numbers, reproducible):
-
-| | |
+| Condition | Behaviour |
 |---|---|
-| Mean score | **22.7 / 100** |
-| Sites graded C or better | **0 of 20** |
-| Sites publishing `llms.txt` | 3 of 20 |
-| Sites with JSON-LD | 8 of 20 |
-
-Two of the three that publish `llms.txt` do so by accident — Yoast SEO v28.5 and Rank Math
-now auto-generate it. The ones on older stacks have nothing.
+| A request errors or exceeds 12 s | Each request is time-bounded (`AbortSignal.timeout(12000)`). It records status `0` and the check fails, but the scan does not crash |
+| Home page unreachable | All checks still run and report their own status, so the score reflects what the site actually served |
+| Malformed JSON-LD block | The scanner skips that block and counts only parseable types |
+| Issue bot: no URL in the issue | Replies asking for a URL and scans nothing |
+| Issue bot: `localhost`, `*.local`, `*.internal`, IP literals, non-http(s) | Rejects the target and explains why. The filter checks hostnames only and does not resolve DNS, so it is hygiene, not a full SSRF defence |
+| Issue bot: scan fails or times out | Replies that the site refused the request or timed out |
 
 ## Try it without installing anything
 
@@ -82,15 +84,15 @@ node outreach.mjs calgary-home-services.txt --out ./prospects --cat "home servic
 node fix.mjs dukesplumbing.ca --out ./fixes
 ```
 
-## What it checks — 15 signals, 93 weighted points
+## What it checks: 15 signals, 93 weighted points
 
 | Weight | Check |
 |---|---|
 | 12 | `llms.txt` present (real content, not a soft-404) |
 | 12 | JSON-LD structured data |
-| 12 | robots.txt addresses AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, …) |
-| 10 | OpenAPI / Swagger spec discoverable |
-| 10 | Agent manifest (`/.well-known/mcp.json`, `ai-plugin.json`, …) |
+| 10 | robots.txt addresses AI crawlers (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, …) |
+| 8 | OpenAPI / Swagger spec discoverable |
+| 8 | Agent manifest (`/.well-known/mcp.json`, `ai-plugin.json`, …) |
 | 8 | Markdown content negotiation (`Accept: text/markdown`) |
 | 5 | `sitemap.xml` reachable |
 | 5 | High-value schema types (Organization, LocalBusiness, Product, FAQPage, …) |
@@ -98,7 +100,39 @@ node fix.mjs dukesplumbing.ca --out ./fixes
 | 4 | HTTPS, `llms-full.txt` |
 | 3 | `ai.txt`, `security.txt`, agent hint files, sitemap declared in robots.txt |
 
-Weights are opinionated and in the open — edit `CHECKS` in `scan.mjs` and argue with them.
+The table mirrors the `add(...)` calls in `scan.mjs`, which sum to 93. The weights are opinionated and public: edit them in `scan.mjs` and argue with them.
+
+## Evidence
+
+- **Committed cohort scan:** [`examples/calgary-home-services-2026-10-04.html`](examples/calgary-home-services-2026-10-04.html). It covers 20 sites, with a mean score of 22.7/100. 0 of 20 sites grade C or better, 4 of 20 publish `llms.txt`, and 9 of 20 have JSON-LD.
+- **Live issue scan:** [issue #1](https://github.com/marsojuji-cmyk/agentready/issues/1).
+- **Quickstart output:** the `stripe.com` sample above, re-run on 2026-10-07. It scored 47/100, grade D, 44/93 points. Live sites change, so your numbers may differ.
+- The repo has **no automated test suite** yet. CodeQL code scanning and the scan-on-issue workflow run on GitHub Actions.
+
+## Why it matters
+
+Agents — ChatGPT, Claude, Perplexity, Gemini, Copilot — increasingly read sites through
+machine-readable surfaces *before* they read the HTML. `llms.txt`, AI crawler rules in
+`robots.txt`, `schema.org` JSON-LD, an OpenAPI spec, an MCP manifest, markdown content
+negotiation. When a site lacks them, the agent gets an HTML soup of nav links and marketing
+copy, or nothing at all.
+
+Two things happen then: the site **doesn't get cited** when someone asks an assistant a
+question it should have answered, and it **can't be operated** by an agent that wanted to
+book, quote, or buy.
+
+The committed Calgary home-services scan from 2026-10-04
+([`examples/calgary-home-services-2026-10-04.html`](examples/calgary-home-services-2026-10-04.html), 20 sites) shows:
+
+| | |
+|---|---|
+| Mean score | **22.7 / 100** |
+| Sites graded C or better | **0 of 20** |
+| Sites publishing `llms.txt` | 4 of 20 |
+| Sites with JSON-LD | 9 of 20 |
+
+SEO plugins now generate some of these files automatically: `mrmikesplumbing.ca/llms.txt`
+opens with "Generated by Rank Math SEO" (checked 2026-10-07).
 
 ## Design constraints
 
@@ -106,6 +140,10 @@ Weights are opinionated and in the open — edit `CHECKS` in `scan.mjs` and argu
 - **One file, readable in a sitting.** You can audit every claim it makes about your site.
 - **Evidence, not vibes.** Every check prints the URL it hit and the status it got back.
 - **Soft-404 aware.** A 200 that returns HTML is not a passing `llms.txt`.
+
+## Status
+
+Working tool, early. The single-site scanner and the issue bot run in production on this repo. The weights are opinionated and open to argument.
 
 ## License
 
