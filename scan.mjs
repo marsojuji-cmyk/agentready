@@ -12,7 +12,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const UA = 'Mozilla/5.0 (compatible; AgentReadyBot/1.0; +https://github.com/agentready)';
+const UA = 'Mozilla/5.0 (compatible; AgentReadyBot/1.0; +https://github.com/marsojuji-cmyk/agentready)';
 const TIMEOUT_MS = 12000;
 
 async function get(url, headers = {}) {
