@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 /**
  * agentready batch — scan a list of domains, emit a ranked leaderboard.
- * Zero dependencies. Usage: node batch.mjs <list.txt> [--out <dir>] [--cat "Calgary plumbers"]
+ * Zero dependencies. Usage: node batch.mjs <list.txt> [--out <dir>] [--cat "Calgary plumbers"] [--anon]
  * list.txt = one URL/domain per line; blank lines and #comments ignored.
+ *
+ * Every listed site appears in the leaderboard, including ones that could not be scanned (UNREACHABLE)
+ * or whose homepage did not return 200 to the scanner (bot wall, parked domain, error page). Those are
+ * scored on what an agent actually received and are flagged "not readable", so the headline counts are
+ * always "of N listed", never silently "of the ones that worked".
+ * --anon labels sites "Site A", "Site B", … in rank order in leaderboard.html/.csv (per-site reports in
+ * --out still use the real host names; don't publish those).
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,6 +21,7 @@ const outIdx = args.indexOf('--out');
 const outDir = outIdx !== -1 ? args[outIdx + 1] : join(process.cwd(), 'agentready-out');
 const catIdx = args.indexOf('--cat');
 const category = catIdx !== -1 ? args[catIdx + 1] : 'the cohort';
+const anon = args.includes('--anon');
 
 const lines = readFileSync(listFile, 'utf8')
   .split('\n').map((l) => l.trim())
@@ -29,7 +37,7 @@ for (const target of lines) {
     r = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
   } catch (e) {
     console.error(`  ! ${target} — ${String(e.message).slice(0, 120)}`);
-    rows.push({ host: target, score: null, grade: '?', unreachable: true });
+    rows.push({ host: target, score: null, grade: 'N/A', unreachable: true, readable: false, gaps: [] });
     continue;
   }
   rows.push({
@@ -37,27 +45,45 @@ for (const target of lines) {
     gaps: r.gaps.slice(0, 3).map((g) => g.name), topGapPts: r.gaps[0]?.weight || 0,
     pts: `${r.earned}/${r.totalWeight}`, llms: r.checks.find((c) => c.id === 'llms_txt')?.pass,
     jsonld: r.checks.find((c) => c.id === 'jsonld')?.pass,
-    ms: r.homeMs,
+    ms: r.homeMs, home: r.homeStatus, readable: r.homeStatus === 200,
   });
-  console.log(`  ${String(r.score).padStart(3)}/100  ${r.grade}  ${r.host}`);
+  console.log(`  ${String(r.score).padStart(3)}/100  ${r.grade}  ${r.host}${r.homeStatus === 200 ? '' : `  (homepage → ${r.homeStatus}: not readable)`}`);
 }
 
 const live = rows.filter((r) => r.score !== null).sort((a, b) => b.score - a.score);
+const dead = rows.filter((r) => r.score === null);
 const mean = live.length ? (live.reduce((s, r) => s + r.score, 0) / live.length).toFixed(1) : 'n/a';
+const readable = live.filter((r) => r.readable);
+const readableMean = readable.length ? (readable.reduce((s, r) => s + r.score, 0) / readable.length).toFixed(1) : 'n/a';
+const notReadable = rows.length - readable.length;
+const best = live[0];
+const cOrBetter = live.filter((r) => r.score >= 62).length;
 const withLlms = live.filter((r) => r.llms).length;
 const withJsonld = live.filter((r) => r.jsonld).length;
 const isoDate = new Date().toISOString().slice(0, 10);
+const label = (i) => 'Site ' + (i < 26 ? String.fromCharCode(65 + i) : `${String.fromCharCode(65 + Math.floor(i / 26) - 1)}${String.fromCharCode(65 + (i % 26))}`);
+[...live, ...dead].forEach((r, i) => { r.shown = anon ? label(i) : r.host; });
+const note = (r) => r.unreachable ? 'UNREACHABLE: no HTTP response (not scored)' : !r.readable ? `not readable: homepage returned HTTP ${r.home} to the scanner` : '';
 
 const esc = (s) => String(s).replace(/[<>&"]/g, (m) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[m]));
 const rowsHtml = live.map((r, i) => `
     <tr>
       <td class="rank">${i + 1}</td>
-      <td class="host">${esc(r.host)}</td>
+      <td class="host">${esc(r.shown)}</td>
       <td class="score ${r.score >= 62 ? 'good' : r.score >= 25 ? 'mid' : 'bad'}">${r.score}</td>
       <td class="grade">${r.grade}</td>
       <td class="flag">${r.llms ? '&#10003;' : '&#10007;'}</td>
       <td class="flag">${r.jsonld ? '&#10003;' : '&#10007;'}</td>
-      <td class="gaps">${esc(r.gaps.join(' · ')) || '—'}</td>
+      <td class="gaps">${note(r) ? `<b>${esc(note(r))}</b> · ` : ''}${esc(r.gaps.join(' · ')) || '—'}</td>
+    </tr>`).join('') + dead.map((r) => `
+    <tr>
+      <td class="rank">—</td>
+      <td class="host">${esc(r.shown)}</td>
+      <td class="score bad">—</td>
+      <td class="grade">N/A</td>
+      <td class="flag">—</td>
+      <td class="flag">—</td>
+      <td class="gaps"><b>${esc(note(r))}</b></td>
     </tr>`).join('');
 
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -88,21 +114,25 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
   .foot{margin-top:20px;color:var(--mut);font-size:12px}
 </style></head><body><div class="wrap">
   <h1>AI Agent Readiness — ${esc(category)}</h1>
-  <div class="sub">${live.length} sites scanned · ${isoDate} · 15 machine-readability checks · generated by agentready</div>
+  <div class="sub">${rows.length} sites listed · scanned ${isoDate} · ${live.length} scored, ${dead.length} unreachable · ${notReadable} of ${rows.length} could not be read by the scanner · 15 machine-readability checks · generated by agentready</div>
   <div class="stats">
-    <div class="stat"><b>${mean}</b><span>mean score /100</span></div>
-    <div class="stat"><b>${live.filter((r) => r.score >= 62).length}/${live.length}</b><span>grade C or better</span></div>
-    <div class="stat"><b>${withLlms}/${live.length}</b><span>publish llms.txt</span></div>
-    <div class="stat"><b>${withJsonld}/${live.length}</b><span>have structured data</span></div>
+    <div class="stat"><b>${cOrBetter} of ${rows.length}</b><span>grade C (62+) or better</span></div>
+    <div class="stat"><b>${best ? best.score : 'n/a'}</b><span>best score /100${best ? ` (${best.grade})` : ''}</span></div>
+    <div class="stat"><b>${mean}</b><span>mean of ${live.length} scored</span></div>
+    <div class="stat"><b>${withLlms} of ${rows.length}</b><span>publish llms.txt</span></div>
+    <div class="stat"><b>${withJsonld} of ${rows.length}</b><span>have structured data</span></div>
   </div>
   <table><thead><tr><th></th><th>Site</th><th>Score</th><th>Gr</th><th>llms</th><th>ld+json</th><th>Top gaps</th></tr></thead>
   <tbody>${rowsHtml}</tbody></table>
+  <div class="foot">Method: one pass of <code>node batch.mjs</code> (agentready <code>scan.mjs</code>, user-agent AgentReadyBot/1.0, soft-404 aware). 93 weighted points; grades A&nbsp;90+ · B&nbsp;78+ · C&nbsp;62+ · D&nbsp;45+ · E&nbsp;25+ · F.
+    "Not readable" = the homepage did not return 200 to the scanner (bot wall, no site connected, error page); those sites are scored on what an agent actually received. Mean of the ${readable.length} readable sites: ${readableMean}.</div>
   <div class="foot">Checked: llms.txt · llms-full.txt · ai.txt · AI crawler rules · sitemap · JSON-LD · schema types · OpenAPI · MCP manifest · markdown negotiation · security.txt · OpenGraph meta · agent hint files</div>
 </div></body></html>`;
 
 writeFileSync(join(outDir, 'leaderboard.html'), html);
 writeFileSync(join(outDir, 'leaderboard.csv'),
-  'rank,host,score,grade,earned,total,llms_txt,json_ld,top_gap,response_ms\n' +
-  live.map((r, i) => [i + 1, r.host, r.score, r.grade, ...r.pts.split('/'), r.llms ? 1 : 0, r.jsonld ? 1 : 0, `"${r.gaps[0] || ''}"`, r.ms].join(',')).join('\n') + '\n');
+  'rank,host,score,grade,earned,total,llms_txt,json_ld,top_gap,response_ms,home_status,readable\n' +
+  [...live.map((r, i) => [i + 1, r.shown, r.score, r.grade, ...r.pts.split('/'), r.llms ? 1 : 0, r.jsonld ? 1 : 0, `"${r.gaps[0] || ''}"`, r.ms, r.home, r.readable ? 1 : 0].join(',')),
+    ...dead.map((r) => ['', r.shown, '', 'N/A', '', '', '', '', '"UNREACHABLE"', '', 0, 0].join(','))].join('\n') + '\n');
 
-console.log(`\n  mean ${mean}/100 · ${live.length} live · wrote ${join(outDir, 'leaderboard.html')}`);
+console.log(`\n  ${rows.length} listed · ${live.length} scored · ${dead.length} unreachable · ${notReadable} not readable · ${cOrBetter} of ${rows.length} C or better · best ${best ? best.score : 'n/a'} · mean ${mean}/100 (readable-only ${readableMean}) · wrote ${join(outDir, 'leaderboard.html')}`);
